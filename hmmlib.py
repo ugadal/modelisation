@@ -17,12 +17,41 @@ class model():
 		self.LE=LE
 		self.PI=PI
 		self.alphabet=alphabet
+	def updatepi(self,LO):
+		newpi={st:0 for st in self.LE}
+		for so in LO:
+			tt=so.estpi(self)
+			for k,v in tt.items():
+				newpi[k]+=v*so.pobs
+		self.PI=normd(newpi)
+	def updateem(self,LO):
+		newe={st:{observable:0 for observable in self.alphabet} for st in self.LE}
+		SG={st:0 for st in self.LE}
+		for so in LO:
+			tt,tsg=so.estem(self)
+			for st in self.LE:
+				for obs in self.alphabet:
+					newe[st][obs]+=tt[st][obs]*so.pobs
+		for st in self.LE:
+			st.E=normd(newe[st])
+
+	def updatetr(self,LO):
+		newtr={source:{k:0 for k in self.LE} for source in self.LE}
+		SG={st:0 for st in self.LE}
+		for so in LO:
+			nt,tsg=so.esttr(self)
+			for source in self.LE:
+				for target in self.LE:
+					newtr[source][target]+=nt[source][target]*so.pobs
+		for source in self.LE:
+			source.T=normd(newtr[source])
 	def rep(self):
 		print([(k.name,v) for k,v in self.PI.items()])
 		for s in self.LE:
 			print(s.name,[(k,v) for k,v in s.E.items()])
 		for s in self.LE:
 			print(s.name,[(k.name,v) for k,v in s.T.items()])
+				
 def makernddic(L):
 	P=[random.random() for _ in L]
 	t=sum(P)
@@ -45,8 +74,11 @@ class SO():
 	def __init__(self,so,pobs):
 		self.so=list(so)
 		self.pobs=pobs
+		self.A={}
 		self.Ab={}
+		self.B={}
 		self.Bb={}
+		self.G={}
 		self.Gb={}
 		self.BF={}
 	def alphab(self,model):
@@ -77,11 +109,35 @@ class SO():
 			for source in model.LE:
 				self.Bb[source,t-1]=sum(source.transit(target)*target.emit(symb)*self.Bb[target,t] for target in model.LE)/self.BF[t-1]
 	def gammab(self,model):
-		self.alphabsw(model)
-		self.betab(model)
-		self.Gb={k:self.Ab[k]*self.Bb[k] for k in self.Ab.keys()}
+		self.alphab(model)
+		self.betabsw(model)
+		self.Gb={k:self.Ab[k]*self.Bb[k] * self.BF[k[1]] for k in self.Ab.keys()}
 	def norm(self):
 		for k in self.G.keys():self.G[k]/=self.cp
+	def esttr(self,model):
+		ntt={source:{target:0 for target in model.LE} for source in model.LE}
+		sg={st:0 for st in model.LE}
+		for t,o in enumerate(self.so[:-1]):
+			for source in model.LE:
+				sg[source]+=self.Gb[source,t]
+		for source in model.LE:
+			for target in model.LE:
+				for t,observable in enumerate(self.so[1:]):
+					ntt[source][target] += self.Ab[source,t] * source.transit(target) * target.emit(observable) * self.Bb[target,t+1]
+		# ~ for source in model.LE:
+			# ~ for target in model.LE:
+				# ~ ntt[source][target]/=sumgamma[source]
+		return ntt,sg
+	def estpi(self,model):
+		return {st:self.Gb[st,0] for st in model.LE}
+	def estem(self,model):
+		newte={st:{symb:0 for symb in model.alphabet} for st in model.LE}
+		sg={st:0 for st in model.LE}
+		for t,symb in enumerate (self.so):
+			for source in model.LE:
+				newte[source][symb]+=self.Gb[source,t]
+				sg[source]+=self.Gb[source,t]
+		return newte,sg
 	def rep(self,D,model):
 		print("\t".join(s.name for s in model.LE))
 		for t in range(len(self.so)):
