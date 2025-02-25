@@ -18,7 +18,7 @@ for l in open(fn):
 	alphabet.extend(so)
 for so in LO:so.pobs/=tobs
 alphabet=set(alphabet)
-rmodel=mkrndmodel(2,alphabet)
+rmodel=mkrndmodel(8,alphabet)
 
 um=rmodel
 # ~ um=thismodel
@@ -39,7 +39,7 @@ while True:
 	# ~ for so in LO:so.gamma(um)
 	for so in LO:so.gammab(um)
 	print(sum(so.decal for so in LO))
-	# ~ um.rep()
+	um.rep()
 	# ~ input()
 	# ~ nnn=LO[11]
 	# ~ d=nnn.esttr(um)
