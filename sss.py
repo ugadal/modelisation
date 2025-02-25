@@ -8,6 +8,7 @@ pa.T={pa:.8,pb:.2}
 pb.T={pa:.4,pb:.6}
 Pi={pa:.6,pb:.4}
 thismodel=model([pa,pb],Pi,list("NSP"))
+thismodel=mkrndmodel(5,list("NSP"))
 sss=SO("SSS",1)
 sss.gammab(thismodel)
 sss.rep(sss.Ab,thismodel)
