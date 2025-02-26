@@ -17,8 +17,6 @@ def getseq(df):
 		line=df.readline().strip()
 	yield defline,"".join(seq)
 
-
-
 def normd(D):
 	t=sum(D.values())
 	new={k:v/t for k,v in D.items()}
