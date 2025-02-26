@@ -1,9 +1,31 @@
 import random
 from math import log
 from functools import reduce
+
+def getseq(df):
+	line="#"
+	while not line.startswith(">"):line=df.readline().strip()
+	defline=line[1:]
+	line=df.readline().strip()
+	seq=[]
+	while line:
+		if line.startswith(">"):
+			yield defline,"".join(seq)
+			seq=[]
+			defline=line
+		else:seq.append(line)
+		line=df.readline().strip()
+	yield defline,"".join(seq)
+
+
+
 def normd(D):
 	t=sum(D.values())
-	return {k:v/t for k,v in D.items()}
+	new={k:v/t for k,v in D.items()}
+	if any(v==1.0 for v in new.values()):
+		new={k:0 if v!=1.0 else 1.0 for k,v in new.items()}
+	return new
+	# ~ return {k:v/t for k,v in D.items()}
 class state():
 	def __init__(self,n="pas de nom"):
 		# ~ print("initialisation d'une instance d'etat",n)
