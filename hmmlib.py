@@ -18,10 +18,21 @@ def getseq(df):
 	yield defline,"".join(seq)
 
 def normd(D):
+	trsh=1e-5
 	t=sum(D.values())
 	new={k:v/t for k,v in D.items()}
 	if any(v==1.0 for v in new.values()):
 		new={k:0 if v!=1.0 else 1.0 for k,v in new.items()}
+	while True:
+		V=list(new.values())
+		V.sort()
+		mi=next(v for v in V if v>0)
+		mx=max(new.values())
+		if mi/mx<trsh:
+			new={k:0 if v/mx<trsh  else v for k,v in new.items()}
+			# ~ new=normd(new)
+			continue
+		break
 	return new
 	# ~ return {k:v/t for k,v in D.items()}
 class state():
@@ -32,6 +43,8 @@ class state():
 		self.T={}
 	def emit(self,symb):return self.E.get(symb)
 	def transit(self,target):return self.T.get(target)
+	def repemit(self):
+		print(self.name,1/(1-self.T[self]),"".join([s*int(100*v) for s,v in self.E.items()]))
 class model():
 	def __init__(self,LE,PI,alphabet):
 		self.LE=LE
@@ -68,7 +81,8 @@ class model():
 	def rep(self):
 		print([(k.name,v) for k,v in self.PI.items()])
 		for s in self.LE:
-			print(s.name,[(k,v) for k,v in s.E.items()])
+			s.repemit()
+			# ~ print(s.name,[(k,v) for k,v in s.E.items()])
 		for s in self.LE:
 			print(s.name,[(k.name,v) for k,v in s.T.items()])
 				
