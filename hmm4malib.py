@@ -23,10 +23,13 @@ def getlayers(l,m,t):
 		yield mod,l-mod
 def normd(D):
 	trsh=1e-5
+	if any(v==1.0 for v in D.values()):
+		new={k:0 if v!=1.0 else 1.0 for k,v in D.items()}
+		return new
 	t=sum(D.values())
 	new={k:v/t for k,v in D.items()}
-	if any(v==1.0 for v in new.values()):
-		new={k:0 if v!=1.0 else 1.0 for k,v in new.items()}
+	# ~ if any(v==1.0 for v in new.values()):
+		# ~ new={k:0 if v!=1.0 else 1.0 for k,v in new.items()}
 	while True:
 		V=list(new.values())
 		V.sort()
@@ -118,8 +121,11 @@ def mkrndmodel(LSEQ):
 		source.I.T=makernddic(list("IMD"))
 	final=module(ttl+1,alphabet)
 	final.I.T=makernddic(list("IMD"))
+	print(final.I.T)
 	final.I.T["I"]=1.0
+	print(final.I.T)
 	final.I.T=normd(final.I.T)
+	print(final.I.T)
 	LM.append(final)
 	for source,dest in zip(LM,LM[1:]):
 		source.to_mod=dest
@@ -208,5 +214,6 @@ class Seq():
 if __name__ == '__main__':
 	LS=[Seq("ABC"),Seq("BCD"),Seq("BC")]
 	print(LS)
-	mkrndmodel(LS)
-	
+	model=mkrndmodel(LS)
+	print(model.LM[-1].I.T)
+	for t in getlayers(4,4,5):print(t)
