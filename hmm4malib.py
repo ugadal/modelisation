@@ -57,6 +57,9 @@ class module():
 		self.M=state()
 		self.M.E=makernddic(alphabet)
 		self.D=state()
+		self.to_mod=None
+		self.from_mod=None
+		
 class model():
 	def __init__(self,LM,PI,LSEQ):
 		self.LM=LM
@@ -110,10 +113,18 @@ def mkrndmodel(LSEQ):
 	for seq in LSEQ:alphabet=alphabet or set(seq.so)
 	LM=[module(x,alphabet) for x in range(ttl+1)]
 	for source,dest in zip(LM,LM[1:]):
-		source.M.T=makernddic((dest.I,dest.M,dest.D))
-		source.D.T=makernddic((dest.I,dest.M,dest.D))
-		source.I.T=makernddic((source.I,source.M,source.D))
-	pi=makernddic((LM[0].I,LM[0].M,LM[0].D))
+		source.M.T=makernddic(list("IMD"))
+		source.D.T=makernddic(list("IMD"))
+		source.I.T=makernddic(list("IMD"))
+	final=module(ttl+1,alphabet)
+	final.I.T=makernddic(list("IMD"))
+	final.I.T["I"]=1.0
+	final.I.T=normd(final.I.T)
+	LM.append(final)
+	for source,dest in zip(LM,LM[1:]):
+		source.to_mod=dest
+		dest.from_mod=source
+	pi=makernddic((list("IMD")))
 	return model(LM,pi,LSEQ)
 def printtrd(D):
 	for k,d in D.items()		:
@@ -194,3 +205,8 @@ class Seq():
 		for t in range(len(self.so)):
 			print("\t".join(map(str,(D[s,t] for s in model.LE))))
 		print("============================================")
+if __name__ == '__main__':
+	LS=[Seq("ABC"),Seq("BCD"),Seq("BC")]
+	print(LS)
+	mkrndmodel(LS)
+	
