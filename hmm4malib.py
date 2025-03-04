@@ -1,7 +1,11 @@
 import random
 from math import log
 from functools import reduce
-
+from functools import cache
+I="I"
+M="M"
+D="D"
+random.seed(.31415)
 def getseq(df):
 	line="#"
 	while not line.startswith(">"):line=df.readline().strip()
@@ -16,11 +20,38 @@ def getseq(df):
 		else:seq.append(line)
 		line=df.readline().strip()
 	yield defline,"".join(seq)
-def getlayers(l,m,t):
-	for mod in range(l):
-		if mod>m:break
-		if l-mod>t:break
-		yield mod,l-mod
+"""
+time_obs/module		0		1		2		3		4		5		EIC
+___________________________________________________________________________
+		0			0		1		2		3		4		5		6
+		1			1		2		3		4		5		6		7
+		2			2		3		4		5		6		7		8
+		EDR			3		4		5		6		7		8		
+
+nbmod=6  ; 0->5
+nbobs=3  ; 0->2
+for layer in range (nbmod+nbos):
+	if layer <nbobs: 
+		edr=eic=None
+	else:	
+		edr= module:layer-nbobs, time:nbobs
+	if layer <nbmod:
+		eic=None
+	else:
+		eic=  module:nbmod, time: layer-nbmod
+	inner=[(layer-t,t) for t in range(nbobs) if layer-t<nbmod]
+	return [eic,*inner,edr]
+"""
+@cache
+def getlayers(layer,nbmod,nbobs):
+	print(f"layer : {layer}")
+	if layer<nbobs:edr=eic=None
+	else:edr=(D,layer-nbobs,nbobs)
+	if layer<nbmod:eic=None
+	else:eic=(I,nbmod,layer-nbmod)
+	inner=[(st,layer-t,t) for t in range(nbobs) if 0<=layer-t<nbmod for st in (I,M,D)]
+	return[eic,*inner,edr]
+
 def normd(D):
 	trsh=1e-5
 	if any(v==1.0 for v in D.values()):
@@ -42,6 +73,7 @@ def normd(D):
 		break
 	return new
 	# ~ return {k:v/t for k,v in D.items()}
+def one(*args):return 1
 class state():
 	def __init__(self,n="pas de nom"):
 		# ~ print("initialisation d'une instance d'etat",n)
@@ -60,6 +92,7 @@ class module():
 		self.M=state()
 		self.M.E=makernddic(alphabet)
 		self.D=state()
+		self.D.emit=one
 		self.to_mod=None
 		self.from_mod=None
 		
@@ -68,6 +101,8 @@ class model():
 		self.LM=LM
 		self.PI=PI
 		self.LSEQ=LSEQ
+		self.nbmod=len(LM)
+		print("Pi:",PI)
 		# ~ self.alphabet=alphabet
 	# ~ def updatepi(self,LO):
 		# ~ newpi={st:0 for st in self.LE}
@@ -147,7 +182,80 @@ class Seq():
 		self.Bb={}
 		self.Gb={}
 		self.BF={}
-	# ~ def alphab(self,model):
+	def alphab(self,model):
+		# ~ layer 0
+		module=model.LM[0]
+		self.Ab[I,0,0]=model.PI[I] * module.I.E[self.so[0]]
+		self.Ab[M,0,0]=model.PI[M] * module.M.E[self.so[0]]
+		self.Ab[D,0,0]=model.PI[D] 
+		bf=self.Ab[I,0,0]+self.Ab[M,0,0]+self.Ab[M,0,0]
+		self.Ab[I,0,0]/=bf
+		self.Ab[M,0,0]/=bf
+		self.Ab[D,0,0]/=bf
+		self.BF[0]=bf
+		# ~ layer 1
+		current=module.to_mod
+		previous=module
+		bf=0
+		v = self.Ab[D,0,0] * previous.D.transit(I) * current.I.emit(self.so[0])
+		bf+=v
+		self.Ab[I,1,0] = v
+		v = self.Ab[D,0,0] * previous.D.transit(M) * current.M.emit(self.so[0])
+		bf+=v
+		self.Ab[M,1,0] = v
+		v = self.Ab[D,0,0] * previous.D.transit(D) 
+		bf+=v
+		self.Ab[D,1,0] = v
+		
+		v = self.Ab[I,0,0] * previous.I.transit(I) * previous.I.emit(self.so[1])
+		bf+=v
+		self.Ab[I,0,1] = v
+		v = self.Ab[I,0,0] * previous.I.transit(M) * previous.M.emit(self.so[1])
+		bf+=v
+		self.Ab[M,0,1] = v
+		v = self.Ab[I,0,0] * previous.I.transit(D) 
+		bf+=v
+		self.Ab[D,0,1] = v
+		self.Ab[I,1,0]/=bf
+		self.Ab[M,1,0]/=bf
+		self.Ab[D,1,0]/=bf
+		self.Ab[I,0,1]/=bf
+		self.Ab[M,0,1]/=bf
+		self.Ab[D,0,1]/=bf
+		self.BF[1]=bf
+		for k,v in self.Ab.items():print(k,v)
+		for layer in range(2,self.L+model.nbmod):
+			cells=getlayers(layer,model.nbmod,self.L)
+			bf=0
+			if cells[0]: # I run
+				state,modnum,t=cells[0]
+				current=model.LM[modnum]
+				previous=current.from_mod
+				v = self.Ab[D,modnum-1,t] * previous.D.transit(I) * current.I.emit(self.so[t])
+				if t>0:
+					v+=self.Ab[I,modnum,t-1] * current.I.transit(I) * current.I.emit(self.so[t])
+					v+=self.Ab[M,modnum-1,t-1] * previous.M.transit(I) * current.I.emit(self.so[t])
+				self.Ab[state,modnum,t]=v
+				bf+=v
+			if cells[-1]: # D run
+				state,modnum,t=cells[-1]
+				current=model.LM[modnum]
+				v = self.Ab[I,modnum,t] * current.I.transit(D)
+				if modnum>0:
+					previous=current.from_mod
+					v+=self.Ab[D,modnum-1,t] * previous.D.transit(D)
+					v+=self.Ab[M,modnum-1,t-1] * previous.M.transit(D) 
+				self.Ab[state,modnum,t]=v
+				bf+=v
+			for state,modnum,t in cells[1:-1]:
+				
+		# ~ for layer in range(2:self.L+model.nbmod):
+			# ~ cells=getlayers(layer,model.nbmod,self.L)
+			# ~ if cells[0]: #EIC True
+				# ~ mod,t=cells[0]
+				# ~ module=model.LM[module]
+				# ~ previous=module.from_mod
+				# ~ self.Ab[I,mod,t]=self.Ab[D,mod-1,t] * previous.D.transits(I) *
 		# ~ layer 0
 		# ~ model.
 		# ~ T=[model.PI[s] for s in model.LE]
@@ -216,4 +324,8 @@ if __name__ == '__main__':
 	print(LS)
 	model=mkrndmodel(LS)
 	print(model.LM[-1].I.T)
-	for t in getlayers(4,4,5):print(t)
+	nbobs=3
+	nbmod=6
+	# ~ for layer in range(nbmod+nbobs):
+		# ~ for t in getlayers(layer,nbmod,nbobs):print(t)
+	LS[0].alphab(model)
