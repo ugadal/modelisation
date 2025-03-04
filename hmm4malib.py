@@ -162,9 +162,9 @@ def mkrndmodel(LSEQ):
 		source.D.T=makernddic(list("IMD"))
 		source.I.T=makernddic(list("IMD"))
 	lastmod=LM[-1]
-	lastmod.D.T={I:1}
-	lastmod.M.T={I:1}
-	final=module(ttl+1,alphabet)
+	lastmod.D.T={I:1.0,M:0,D:0}
+	lastmod.M.T={I:1.0,M:0,D:0}
+	final=module(ttl,alphabet)
 	final.I.T=makernddic(list("IMD"))
 	print(final.I.T)
 	final.I.T["I"]=1.0
