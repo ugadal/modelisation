@@ -44,7 +44,7 @@ for layer in range (nbmod+nbos):
 """
 @cache
 def getlayers(layer,nbmod,nbobs):
-	print(f"layer : {layer}")
+	print(f"layer : {layer} ,{nbmod}, {nbobs}")
 	if layer<nbobs:edr=eic=None
 	else:edr=(D,layer-nbobs,nbobs)
 	if layer<nbmod:eic=None
@@ -95,14 +95,19 @@ class module():
 		self.D.emit=one
 		self.to_mod=None
 		self.from_mod=None
+	def st(self,s):
+		match s:
+			case "I":return self.I
+			case "D":return self.D
+			case "M":return self.M
 		
 class model():
 	def __init__(self,LM,PI,LSEQ):
 		self.LM=LM
 		self.PI=PI
 		self.LSEQ=LSEQ
-		self.nbmod=len(LM)
-		print("Pi:",PI)
+		self.nbmod=len(LM)-1
+		print("Pi:",PI,len(LM),self.nbmod)
 		# ~ self.alphabet=alphabet
 	# ~ def updatepi(self,LO):
 		# ~ newpi={st:0 for st in self.LE}
@@ -149,11 +154,14 @@ def mkrndmodel(LSEQ):
 	ttl=sum(seq.L for seq in LSEQ)
 	alphabet=set()
 	for seq in LSEQ:alphabet=alphabet or set(seq.so)
-	LM=[module(x,alphabet) for x in range(ttl+1)]
-	for source,dest in zip(LM,LM[1:]):
+	LM=[module(x,alphabet) for x in range(ttl)]
+	for source in LM:
 		source.M.T=makernddic(list("IMD"))
 		source.D.T=makernddic(list("IMD"))
 		source.I.T=makernddic(list("IMD"))
+	lastmod=LM[-1]
+	lastmod.D.T={I:1}
+	lastmod.M.T={I:1}
 	final=module(ttl+1,alphabet)
 	final.I.T=makernddic(list("IMD"))
 	print(final.I.T)
@@ -184,9 +192,9 @@ class Seq():
 		self.BF={}
 	def alphab(self,model):
 		# ~ layer 0
-		module=model.LM[0]
-		self.Ab[I,0,0]=model.PI[I] * module.I.E[self.so[0]]
-		self.Ab[M,0,0]=model.PI[M] * module.M.E[self.so[0]]
+		current=model.LM[0]
+		self.Ab[I,0,0]=model.PI[I] * current.I.E[self.so[0]]
+		self.Ab[M,0,0]=model.PI[M] * current.M.E[self.so[0]]
 		self.Ab[D,0,0]=model.PI[D] 
 		bf=self.Ab[I,0,0]+self.Ab[M,0,0]+self.Ab[M,0,0]
 		self.Ab[I,0,0]/=bf
@@ -194,8 +202,8 @@ class Seq():
 		self.Ab[D,0,0]/=bf
 		self.BF[0]=bf
 		# ~ layer 1
-		current=module.to_mod
-		previous=module
+		current=current.to_mod
+		previous=current.from_mod
 		bf=0
 		v = self.Ab[D,0,0] * previous.D.transit(I) * current.I.emit(self.so[0])
 		bf+=v
@@ -226,6 +234,7 @@ class Seq():
 		for k,v in self.Ab.items():print(k,v)
 		for layer in range(2,self.L+model.nbmod):
 			cells=getlayers(layer,model.nbmod,self.L)
+			print(cells)
 			bf=0
 			if cells[0]: # I run
 				state,modnum,t=cells[0]
@@ -240,7 +249,7 @@ class Seq():
 			if cells[-1]: # D run
 				state,modnum,t=cells[-1]
 				current=model.LM[modnum]
-				v = self.Ab[I,modnum,t] * current.I.transit(D)
+				v = self.Ab[I,modnum,t-1] * current.I.transit(D)
 				if modnum>0:
 					previous=current.from_mod
 					v+=self.Ab[D,modnum-1,t] * previous.D.transit(D)
@@ -248,7 +257,23 @@ class Seq():
 				self.Ab[state,modnum,t]=v
 				bf+=v
 			for state,modnum,t in cells[1:-1]:
-				
+				print(f"fiddling on {state}, {modnum},{t}")
+				current=model.LM[modnum]
+				if t==0:
+					v=self.Ab[D,modnum-1,t] * current.from_mod.D.transit(state) * current.st(state).emit(self.so[t])
+				elif modnum==0:
+					v=self.Ab[I,modnum,t-1] * current.I.transit(state) * current.st(state).emit(self.so[t])
+				else:
+					v=self.Ab[D,modnum-1,t] * current.from_mod.D.transit(state) * current.st(state).emit(self.so[t])
+					v+=self.Ab[I,modnum,t-1] * current.I.transit(state) * current.st(state).emit(self.so[t])
+					v+=self.Ab[M,modnum-1,t-1] * current.from_mod.M.transit(state) * current.st(state).emit(self.so[t])*self.BF[layer-1]
+				bf+=v
+				self.Ab[state,modnum,t]=v
+			for state,modnum,t in [c for c in cells if c]:
+				self.Ab[state,modnum,t]/=bf
+				print(state,modnum,t,self.Ab[state,modnum,t])
+			self.BF[layer]=bf
+			print(self.BF)
 		# ~ for layer in range(2:self.L+model.nbmod):
 			# ~ cells=getlayers(layer,model.nbmod,self.L)
 			# ~ if cells[0]: #EIC True
@@ -320,12 +345,13 @@ class Seq():
 			print("\t".join(map(str,(D[s,t] for s in model.LE))))
 		print("============================================")
 if __name__ == '__main__':
-	LS=[Seq("ABC"),Seq("BCD"),Seq("BC")]
+	LS=[Seq("ABC"),Seq("BCD")]
+	LS=[Seq("ABCDEF"),Seq("BCDEFG")]
 	print(LS)
 	model=mkrndmodel(LS)
 	print(model.LM[-1].I.T)
-	nbobs=3
-	nbmod=6
+	# ~ nbobs=3
+	# ~ nbmod=6
 	# ~ for layer in range(nbmod+nbobs):
 		# ~ for t in getlayers(layer,nbmod,nbobs):print(t)
 	LS[0].alphab(model)
