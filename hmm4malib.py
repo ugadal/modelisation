@@ -146,7 +146,7 @@ class model():
 			print(s.name,[(k.name,v) for k,v in s.T.items()])
 				
 def makernddic(L):
-	P=[random.random() for _ in L]
+	P=[random.random() for _ in list(L)]
 	t=sum(P)
 	P=[p/t for p in P]
 	return {o:p for o,p in zip(L,P)}
@@ -154,6 +154,8 @@ def mkrndmodel(LSEQ):
 	ttl=sum(seq.L for seq in LSEQ)
 	alphabet=set()
 	for seq in LSEQ:alphabet=alphabet or set(seq.so)
+	alphabet=list(alphabet)
+	alphabet.sort()
 	LM=[module(x,alphabet) for x in range(ttl)]
 	for source in LM:
 		source.M.T=makernddic(list("IMD"))
@@ -193,25 +195,33 @@ class Seq():
 	def alphab(self,model):
 		# ~ layer 0
 		current=model.LM[0]
-		self.Ab[I,0,0]=model.PI[I] * current.I.E[self.so[0]]
-		self.Ab[M,0,0]=model.PI[M] * current.M.E[self.so[0]]
+		self.Ab[I,0,0]=model.PI[I] * current.I.emit(self.so[0])
+		self.Ab[M,0,0]=model.PI[M] * current.M.emit(self.so[0])
 		self.Ab[D,0,0]=model.PI[D] 
-		bf=self.Ab[I,0,0]+self.Ab[M,0,0]+self.Ab[M,0,0]
+		# ~ print(model.PI[I] , current.I.emit(self.so[0]),self.so[0])
+		# ~ print("IOO",self.Ab[I,0,0])
+		# ~ print("MOO",self.Ab[M,0,0])
+		# ~ print("DOO",self.Ab[D,0,0])
+		bf=self.Ab[I,0,0]+self.Ab[M,0,0]+self.Ab[D,0,0]
 		self.Ab[I,0,0]/=bf
 		self.Ab[M,0,0]/=bf
 		self.Ab[D,0,0]/=bf
 		self.BF[0]=bf
+		# ~ print(bf)
 		# ~ layer 1
 		current=current.to_mod
 		previous=current.from_mod
 		bf=0
 		v = self.Ab[D,0,0] * previous.D.transit(I) * current.I.emit(self.so[0])
+		# ~ print(self.Ab[D,0,0] , previous.D.transit(I) , current.I.emit(self.so[0]))
 		bf+=v
 		self.Ab[I,1,0] = v
 		v = self.Ab[D,0,0] * previous.D.transit(M) * current.M.emit(self.so[0])
+		# ~ print(self.Ab[D,0,0] , previous.D.transit(M) , current.M.emit(self.so[0]))
 		bf+=v
 		self.Ab[M,1,0] = v
 		v = self.Ab[D,0,0] * previous.D.transit(D) 
+		# ~ print(self.Ab[D,0,0] , previous.D.transit(D))
 		bf+=v
 		self.Ab[D,1,0] = v
 		
@@ -346,10 +356,21 @@ class Seq():
 		print("============================================")
 if __name__ == '__main__':
 	LS=[Seq("ABC"),Seq("BCD")]
-	LS=[Seq("ABCDEF"),Seq("BCDEFG")]
+	# ~ LS=[Seq("ABCDEF"),Seq("BCDEFG")]
 	print(LS)
 	model=mkrndmodel(LS)
-	print(model.LM[-1].I.T)
+	# ~ print(model.LM[-1].I.T)
+	print("D0T",model.LM[0].D.T)
+	print("M0T",model.LM[0].M.T)
+	print("M0E",model.LM[0].M.E)
+	print("I0T",model.LM[0].I.T)
+	print("I0E",model.LM[0].I.E)
+	print("D1T",model.LM[1].D.T)
+	print("M1T",model.LM[1].M.T)
+	print("M1E",model.LM[1].M.E)
+	print("I1T",model.LM[1].I.T)
+	print("I1E",model.LM[1].I.E)
+	print (model.PI)
 	# ~ nbobs=3
 	# ~ nbmod=6
 	# ~ for layer in range(nbmod+nbobs):
