@@ -8,11 +8,11 @@ alphabet=set(list(allseq))
 pause=True
 log=open("perm.log","a")
 while True:
-	um=mkrndmodel(5,alphabet)
 	pp=float("-Inf")
 	worse=-pp
 	seed=random.random()
 	random.seed(seed)
+	um=mkrndmodel(5,alphabet)
 	cyc=0
 	worsened=0
 	while True:
