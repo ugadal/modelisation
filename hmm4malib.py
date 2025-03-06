@@ -1,5 +1,6 @@
 import random
 from math import log
+from math import exp
 from functools import reduce
 from functools import cache
 I="I"
@@ -51,7 +52,10 @@ def getlayers(layer,nbmod,nbobs):
 	else:eic=(I,nbmod,layer-nbmod)
 	inner=[(st,layer-t,t) for t in range(nbobs) if 0<=layer-t<nbmod for st in (I,M,D)]
 	return[eic,*inner,edr]
-
+def softexp(L):
+	b=max(L.values())
+	ttl=sum(exp(v-b) for v in L.values())
+	return {k:exp(v-b)/ttl for k,v in L.items()}
 def normd(D):
 	trsh=1e-5
 	if any(v==1.0 for v in D.values()):
@@ -78,7 +82,9 @@ class state():
 	def __init__(self,n="pas de nom"):
 		# ~ print("initialisation d'une instance d'etat",n)
 		self.name=n
+		self.pE={}
 		self.E={}
+		self.pT={}
 		self.T={}
 	def emit(self,symb):return self.E.get(symb)
 	def transit(self,target):return self.T.get(target)
@@ -88,9 +94,11 @@ class module():
 	def __init__(self,c,alphabet):
 		self.col=c
 		self.I=state()
-		self.I.E=makernddic(alphabet)
+		self.I.pE=makernddic(alphabet)
+		self.I.E=softexp(self.I.pE)
 		self.M=state()
-		self.M.E=makernddic(alphabet)
+		self.M.pE=makernddic(alphabet)
+		self.M.E=softexp(self.M.pE)
 		self.D=state()
 		self.D.emit=one
 		self.to_mod=None
@@ -104,6 +112,7 @@ class module():
 class model():
 	def __init__(self,LM,PI,LSEQ):
 		self.LM=LM
+		self.pPI=PI
 		self.PI=PI
 		self.LSEQ=LSEQ
 		self.nbmod=len(LM)-1
@@ -158,9 +167,12 @@ def mkrndmodel(LSEQ):
 	alphabet.sort()
 	LM=[module(x,alphabet) for x in range(ttl)]
 	for source in LM:
-		source.M.T=makernddic(list("IMD"))
-		source.D.T=makernddic(list("IMD"))
-		source.I.T=makernddic(list("IMD"))
+		source.M.pT=makernddic(list("IMD"))
+		source.M.T=softexp(source.M.pT)
+		source.D.pT=makernddic(list("IMD"))
+		source.D.T=softexp(source.D.pT)
+		source.I.pT=makernddic(list("IMD"))
+		source.I.T=softexp(source.I.pT)
 	lastmod=LM[-1]
 	lastmod.D.T={I:1.0,M:0,D:0}
 	lastmod.M.T={I:1.0,M:0,D:0}

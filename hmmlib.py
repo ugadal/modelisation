@@ -1,5 +1,6 @@
 import random
 from math import log
+from math import exp
 from functools import reduce
 
 def getseq(df):
@@ -16,7 +17,10 @@ def getseq(df):
 		else:seq.append(line)
 		line=df.readline().strip()
 	yield defline,"".join(seq)
-
+def softexp(L):
+	b=max(L.values())
+	ttl=sum(exp(v-b) for v in L.values())
+	return {k:exp(v-b)/ttl for k,v in L.items()}
 def normd(D):
 	trsh=1e-5
 	t=sum(D.values())
@@ -39,15 +43,18 @@ class state():
 	def __init__(self,n="pas de nom"):
 		# ~ print("initialisation d'une instance d'etat",n)
 		self.name=n
+		self.pE={}
+		self.pT={}
 		self.E={}
 		self.T={}
 	def emit(self,symb):return self.E.get(symb)
 	def transit(self,target):return self.T.get(target)
 	def repemit(self):
-		print(self.name,1/(1-self.T[self]),"".join([s*int(100*v) for s,v in self.E.items()]))
+		print(self.name,"%2.1f"%(1/(1-self.T[self])),"".join([s*int(100*v) for s,v in self.E.items()]))
 class model():
 	def __init__(self,LE,PI,alphabet):
 		self.LE=LE
+		self.pPI=PI
 		self.PI=PI
 		self.alphabet=alphabet
 	def updatepi(self,LO):
@@ -56,7 +63,9 @@ class model():
 			tt=so.estpi(self)
 			for k,v in tt.items():
 				newpi[k]+=v*so.pobs
-		self.PI=normd(newpi)
+		self.pPI={k:self.pPI[k]+newpi[k]-self.PI[k] for k in self.LE}
+		# ~ self.PI=normd(newpi)
+		self.PI=softexp(self.pPI)
 		self.LE=list(sorted(self.LE,key=lambda x:1/(1-x.T[x])))
 	def updateem(self,LO):
 		newe={st:{observable:0 for observable in self.alphabet} for st in self.LE}
@@ -67,8 +76,12 @@ class model():
 				for obs in self.alphabet:
 					newe[st][obs]+=tt[st][obs]*so.pobs
 		for st in self.LE:
-			st.E=normd(newe[st])
-
+			# ~ print(newe[st])
+			newe[st]=normd(newe[st])
+			# ~ exit()
+			st.pE={k:st.pE[k]+newe[st][k]-st.E[k] for k in self.alphabet}
+			st.E=softexp(st.pE)
+			# ~ st.E=normd(newe[st])
 	def updatetr(self,LO):
 		newtr={source:{k:0 for k in self.LE} for source in self.LE}
 		SG={st:0 for st in self.LE}
@@ -78,7 +91,9 @@ class model():
 				for target in self.LE:
 					newtr[source][target]+=nt[source][target]*so.pobs
 		for source in self.LE:
-			source.T=normd(newtr[source])
+			T=normd(newtr[source])
+			source.pT={k:source.pT[k]+T[k]-source.T[k] for k in self.LE}
+			source.T=softexp(source.pT)
 	def rep(self):
 		print([(k.name,v) for k,v in self.PI.items()])
 		for s in self.LE:
@@ -95,8 +110,10 @@ def makernddic(L):
 def mkrndmodel(nbe,lobservable):
 	SL=[state(f"st-{x}") for x in range(nbe)]
 	for s in SL:
-		s.E=makernddic(lobservable)
-		s.T=makernddic(SL)
+		s.pE=makernddic(lobservable)
+		s.E=softexp(s.pE)
+		s.pT=makernddic(SL)
+		s.T=softexp(s.pT)
 	pi=makernddic(SL)
 	return model(SL,pi,lobservable)
 def printtrd(D):

@@ -9,6 +9,7 @@ pause=True
 log=open("perm.log","a")
 while True:
 	pp=float("-Inf")
+	ppb=float("-Inf")
 	worse=-pp
 	seed=random.random()
 	random.seed(seed)
@@ -19,7 +20,7 @@ while True:
 		cyc+=1
 		for so in LO:so.gammab(um)
 		tp=sum(so.logcpb for so in LO)
-		print(tp)
+		print(tp,"speeding" if tp-2*ppb+pp>0 else "slowing")
 		if tp<worse:worse=tp
 		if tp-pp<0:
 			print("******************* WORSENED ****************************")
@@ -29,7 +30,7 @@ while True:
 			log.write(f"{seed},{worse},{tp},{cyc},{worsened}\n")
 			log.close()
 			break
-		pp=tp
+		pp,ppb=ppb,tp
 		um.rep()
 		# ~ if pause:
 			# ~ input()
