@@ -57,6 +57,7 @@ class model():
 			for k,v in tt.items():
 				newpi[k]+=v*so.pobs
 		self.PI=normd(newpi)
+		self.LE=list(sorted(self.LE,key=lambda x:1/(1-x.T[x])))
 	def updateem(self,LO):
 		newe={st:{observable:0 for observable in self.alphabet} for st in self.LE}
 		SG={st:0 for st in self.LE}
