@@ -23,7 +23,7 @@ while True:
 		if tp-pp<0:
 			print("******************* WORSENED ****************************")
 			worsened+=1
-		if abs(tp-pp)<1e-13:
+		if abs(tp-pp)<1e-10:
 			log.write(f"{seed},{worse},{tp},{cyc},{worsened}\n")
 			break
 		pp=tp
