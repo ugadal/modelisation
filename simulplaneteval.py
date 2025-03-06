@@ -25,7 +25,9 @@ while True:
 			print("******************* WORSENED ****************************")
 			worsened+=1
 		if abs(tp-pp)<1e-8:
+			log=open("perm.log","a")
 			log.write(f"{seed},{worse},{tp},{cyc},{worsened}\n")
+			log.close()
 			break
 		pp=tp
 		um.rep()
