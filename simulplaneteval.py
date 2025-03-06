@@ -4,10 +4,11 @@ nbseq=len(LO)
 for obs in LO:obs.pobs/=nbseq
 allseq="".join("".join(obs.so) for obs in LO)
 alphabet=set(list(allseq))
-um=mkrndmodel(5,alphabet)
+# ~ um=mkrndmodel(5,alphabet)
 pause=True
 log=open("perm.log","a")
 while True:
+	um=mkrndmodel(5,alphabet)
 	pp=float("-Inf")
 	worse=-pp
 	seed=random.random()
