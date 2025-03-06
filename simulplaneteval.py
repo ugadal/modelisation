@@ -14,7 +14,7 @@ while True:
 	seed=random.random()
 	random.seed(seed)
 	cyc=0
-	worsened=0
+	# ~ worsened=0
 	while True:
 		cyc+=1
 		for so in LO:so.gammab(um)
