@@ -20,7 +20,10 @@ while True:
 		cyc+=1
 		for so in LO:so.gammab(um)
 		tp=sum(so.logcpb for so in LO)
-		print(tp,"speeding" if tp-2*ppb+pp>0 else "slowing")
+		# ~ um.temp=1/abs(tp-pp)
+		if tp-2*ppb+pp>0:um.temp-=0.0001
+		else:um.temp+=.0001
+		print(tp,"tampering" if tp-2*ppb+pp>0 else "boosting",um.temp)
 		if tp<worse:worse=tp
 		if tp-pp<0:
 			print("******************* WORSENED ****************************")
