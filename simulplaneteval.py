@@ -21,7 +21,7 @@ while True:
 		for so in LO:so.gammab(um)
 		tp=sum(so.logcpb for so in LO)
 		# ~ um.temp=1/abs(tp-pp)
-		if tp-2*ppb+pp>0:um.temp-=0.0001
+		if tp-2*ppb+pp>0:um.temp=0
 		else:um.temp+=.0001
 		print(tp,"tampering" if tp-2*ppb+pp>0 else "boosting",um.temp)
 		if tp<worse:worse=tp
