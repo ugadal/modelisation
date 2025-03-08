@@ -18,9 +18,23 @@ def getseq(df):
 		line=df.readline().strip()
 	yield defline,"".join(seq)
 def softexp(L):
+	trsh=1e-3
 	b=max(L.values())
 	ttl=sum(exp(v-b) for v in L.values())
-	return {k:exp(v-b)/ttl for k,v in L.items()}
+	new={k:exp(v-b)/ttl for k,v in L.items()}
+	while True:
+		V=list(new.values())
+		V.sort()
+		mi=next(v for v in V if v>0)
+		mx=max(V)
+		if mi/mx<trsh:
+			# ~ new={k:0 if v/mx<trsh else v for k,v in new.items()}
+			K={k for k,v in new.items() if v/mx<trsh }
+			for k in K:L[k]=-1000
+			return softexp(L)
+			continue
+		break
+	return new
 def normd(D):
 	trsh=1e-5
 	t=sum(D.values())

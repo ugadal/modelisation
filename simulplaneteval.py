@@ -23,7 +23,7 @@ while True:
 		# ~ um.temp=1/abs(tp-pp)
 		if tp-2*ppb+pp>0:um.temp=0
 		else:um.temp+=.0001
-		print(tp,"tampering" if tp-2*ppb+pp>0 else "boosting",um.temp)
+		print(tp,"tampering" if tp-2*ppb+pp>0 else "boosting",tp-ppb,um.temp)
 		if tp<worse:worse=tp
 		if tp-pp<0:
 			print("******************* WORSENED ****************************")
