@@ -21,14 +21,15 @@ while True:
 		for so in LO:so.gammab(um)
 		tp=sum(so.logcpb for so in LO)
 		# ~ um.temp=1/abs(tp-pp)
-		if tp-2*ppb+pp>0:um.temp=0
-		else:um.temp+=.0001
-		print(tp,"tampering" if tp-2*ppb+pp>0 else "boosting",tp-ppb,um.temp)
+		if tp-2*ppb+pp>0:um.nerv-=0.0001
+		else:um.nerv+=.0001
+		um.temp=exp(um.nerv)
+		print(tp,"tampering" if tp-2*ppb+pp>0 else "boosting","delta",tp-ppb,"temp",um.temp,"nerv",um.nerv)
 		if tp<worse:worse=tp
 		if tp-pp<0:
 			print("******************* WORSENED ****************************")
 			worsened+=1
-		if abs(tp-pp)<1e-8:
+		if abs(tp-ppb)<1e-8:
 			log=open("perm.log","a")
 			log.write(f"{seed},{worse},{tp},{cyc},{worsened}\n")
 			log.close()

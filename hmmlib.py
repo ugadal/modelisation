@@ -72,13 +72,15 @@ class model():
 		self.PI=PI
 		self.alphabet=alphabet
 		self.temp=0
+		self.nerv=0
 	def updatepi(self,LO):
 		newpi={st:0 for st in self.LE}
 		for so in LO:
 			tt=so.estpi(self)
 			for k,v in tt.items():
 				newpi[k]+=v*so.pobs
-		self.pPI={k:self.pPI[k]+(1+self.temp)*(newpi[k]-self.PI[k]) for k in self.LE}
+		# ~ self.pPI={k:self.pPI[k]+(1+self.temp)*(newpi[k]-self.PI[k]) for k in self.LE}
+		self.pPI={k:self.pPI[k]+self.temp*(newpi[k]-self.PI[k]) for k in self.LE}
 		# ~ self.pPI={k:self.pPI[k]+self.temp*(newpi[k]-self.PI[k]) for k in self.LE}
 		# ~ self.PI=normd(newpi)
 		self.PI=softexp(self.pPI)
@@ -95,7 +97,7 @@ class model():
 			# ~ print(newe[st])
 			newe[st]=normd(newe[st])
 			# ~ exit()
-			st.pE={k:st.pE[k]+(1+self.temp)*(newe[st][k]-st.E[k]) for k in self.alphabet}
+			st.pE={k:st.pE[k]+(0+self.temp)*(newe[st][k]-st.E[k]) for k in self.alphabet}
 			st.E=softexp(st.pE)
 			# ~ st.E=normd(newe[st])
 	def updatetr(self,LO):
@@ -108,7 +110,7 @@ class model():
 					newtr[source][target]+=nt[source][target]*so.pobs
 		for source in self.LE:
 			T=normd(newtr[source])
-			source.pT={k:source.pT[k]+(1+self.temp)*(T[k]-source.T[k]) for k in self.LE}
+			source.pT={k:source.pT[k]+(0+self.temp)*(T[k]-source.T[k]) for k in self.LE}
 			source.T=softexp(source.pT)
 	def rep(self):
 		print([(k.name,v) for k,v in self.PI.items()])
