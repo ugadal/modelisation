@@ -3,6 +3,7 @@
 #  mymal.py
 #  
 from hmm4malib  import *
+random.seed(.31415)
 LS=[Seq("ABC"),Seq("BCD")]
 print(LS)
 model=mkrndmodel(LS)
@@ -20,3 +21,6 @@ for s in (I):
 	print("tr,"+",".join(model.LM[0].M.T.keys()))
 	for mod in model.LM:
 		print(f"{s}{mod.col},"+",".join(map(str,list(mod.st(s).T.values()))))
+fs=LS[0]
+print(fs)
+fs.alphab(model)

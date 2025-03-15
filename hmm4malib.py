@@ -6,7 +6,7 @@ from functools import cache
 I="I"
 M="M"
 D="D"
-random.seed(.31415)
+# ~ random.seed(.31415)
 def getseq(df):
 	line="#"
 	while not line.startswith(">"):line=df.readline().strip()
@@ -210,16 +210,12 @@ class Seq():
 		self.Ab[I,0,0]=model.PI[I] * current.I.emit(self.so[0])
 		self.Ab[M,0,0]=model.PI[M] * current.M.emit(self.so[0])
 		self.Ab[D,0,0]=model.PI[D] 
-		# ~ print(model.PI[I] , current.I.emit(self.so[0]),self.so[0])
-		# ~ print("IOO",self.Ab[I,0,0])
-		# ~ print("MOO",self.Ab[M,0,0])
-		# ~ print("DOO",self.Ab[D,0,0])
 		bf=self.Ab[I,0,0]+self.Ab[M,0,0]+self.Ab[D,0,0]
 		self.Ab[I,0,0]/=bf
 		self.Ab[M,0,0]/=bf
 		self.Ab[D,0,0]/=bf
 		self.BF[0]=bf
-		# ~ print(bf)
+		print("BF0",bf)
 		# ~ layer 1
 		current=current.to_mod
 		previous=current.from_mod
